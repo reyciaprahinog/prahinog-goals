@@ -5,7 +5,7 @@ const Home = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
-        P R A H I N O G - G O A L S SERVICE
+        P R A H I N O G - G O A L S SERVICETask
       </Text>
       <Link style={styles.link} href="/goals">
         View Your Goals
