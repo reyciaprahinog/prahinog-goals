@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "my-goals",
-    "slug": "my-goals",
+    "name": "SERVICETask",
+    "slug": "SERVICETask",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -36,6 +36,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "17a598d4-a754-4762-8815-7fbae148c7c2"
+      }
     }
   }
 }

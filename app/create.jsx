@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { StyleSheet, Text, TextInput, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useGoals } from '../../hooks/useGoals'
+import { useGoals } from '../hooks/useGoals'
 
 const Create = () => {
   const [goal, setGoal] = useState('')
