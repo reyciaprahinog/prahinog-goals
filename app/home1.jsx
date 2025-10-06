@@ -1,10 +1,26 @@
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 
 export default function Home() {
   const router = useRouter();
+  const [profile, setProfile] = useState({ name: '', email: '' });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (auth.currentUser) {
+        const ref = doc(db, 'users', auth.currentUser.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          setProfile(snap.data());
+        }
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -14,20 +30,12 @@ export default function Home() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* App Title and Description */}
         <Text style={styles.appTitle}>SERVICETask</Text>
-        <Text style={styles.appDesc}>
-          SERVICETask is a user-friendly mobile app designed to connect people who need jobs done with those who are looking for work. Whether you're a homeowner needing help with a task or a skilled worker looking for your next gig, SERVICETask makes it easy to post, find, and manage jobs in your area.
-          {"\n\n"}
-          Key Features:
-          {"\n"}• Post a task and hire local help
-          {"\n"}• Browse available jobs based on your skills
-          {"\n"}• In-app chat and job tracking
-          {"\n"}• Secure payments and reviews
-          {"\n\n"}
-          SERVICETask empowers communities by simplifying the way people work together — whether it’s cleaning, repairs, deliveries, or freelance work.
-        </Text>
-
+        {/* Profile Info */}
+        <View style={styles.profileCard}>
+          <Text style={styles.profileName}>👤 {profile.name}</Text>
+          <Text style={styles.profileEmail}>{profile.email}</Text>
+        </View>
         <Text style={styles.title}>Welcome to SERVICETask</Text>
         <View style={styles.buttonGroup}>
           <TouchableOpacity
@@ -123,5 +131,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
     fontWeight: '600',
+  },
+  profileCard: {
+    backgroundColor: '#23272f',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 18,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#1a7431',
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a7431',
+    marginBottom: 4,
+  },
+  profileEmail: {
+    fontSize: 14,
+    color: '#ccc',
   },
 });

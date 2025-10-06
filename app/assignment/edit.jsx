@@ -1,36 +1,53 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Button, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { db } from '../../firebase';
 
 export default function EditAssignment() {
   const { id } = useLocalSearchParams();
   const [title, setTitle] = useState('');
   const [deadline, setDeadline] = useState('');
+  const [price, setPrice] = useState('');
+  const [location, setLocation] = useState('');
+  const [notFound, setNotFound] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const loadAssignment = async () => {
+    setLoading(true);
+    if (!id) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+    const ref = doc(db, 'assignments', id);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const data = snap.data();
+      setTitle(data.title);
+      setDeadline(data.deadline);
+      setPrice(data.price ? String(data.price) : '');
+      setLocation(data.location ? data.location : '');
+      setNotFound(false);
+    } else {
+      setNotFound(true);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const loadAssignment = async () => {
-      const ref = doc(db, 'assignments', id);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        const data = snap.data();
-        setTitle(data.title);
-        setDeadline(data.deadline);
-      } else {
-        alert('Assignment not found');
-        router.back();
-      }
-    };
     loadAssignment();
-  }, []);
+    // eslint-disable-next-line
+  }, [id]);
 
   const handleUpdate = async () => {
     const ref = doc(db, 'assignments', id);
     await updateDoc(ref, {
       title,
       deadline,
+      price: Number(price),
+      location,
     });
     router.push('/assignment/list');
   };
@@ -41,22 +58,85 @@ export default function EditAssignment() {
     router.push('/assignment/list');
   };
 
+  const handleBack = () => {
+    router.back();
+  };
+
+  if (notFound) {
+    return (
+      <View style={styles.container}>
+        <TouchableOpacity style={styles.backIcon} onPress={handleBack}>
+          <Text style={styles.backIconText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.appTitle}>SERVICETask</Text>
+        {/* Illustration */}
+        <Text style={styles.illustration}>📄❌</Text>
+        <Text style={styles.errorTitle}>Assignment Not Found</Text>
+        <Text style={styles.errorDesc}>
+          The requested task does not exist or the ID is invalid.
+        </Text>
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleBack}
+          >
+            <Text style={styles.actionButtonText}>Go Back</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#1a7431' }]}
+            onPress={() => router.push('/assignment/add')}
+          >
+            <Text style={styles.actionButtonText}>Add New Task</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#29b6f6' }]}
+            onPress={() => router.push('/assignment/list')}
+          >
+            <Text style={styles.actionButtonText}>View All Tasks</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#ffa726' }]}
+            onPress={loadAssignment}
+            disabled={loading}
+          >
+            <Text style={styles.actionButtonText}>
+              {loading ? 'Refreshing...' : 'Retry'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#d32f2f' }]}
+            onPress={() => {
+              // Example: open email app
+              window.open('mailto:support@servicetask.com?subject=Assignment%20Not%20Found');
+            }}
+          >
+            <Text style={styles.actionButtonText}>Contact Support</Text>
+          </TouchableOpacity>
+        </View>
+        {/* Recent Tasks */}
+        <Text style={styles.recentTitle}>Recent Tasks</Text>
+        <View style={styles.recentList}>
+          {[
+            { title: 'Clean backyard', location: 'Los Angeles, CA' },
+            { title: 'Fix leaking faucet', location: 'Houston, TX' },
+            { title: 'Dog walking', location: 'Seattle, WA' },
+          ].map((task, idx) => (
+            <View key={idx} style={styles.recentItem}>
+              <Text style={styles.recentTask}>{task.title}</Text>
+              <Text style={styles.recentLocation}>{task.location}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* App Title and Description */}
+      <TouchableOpacity style={styles.backIcon} onPress={handleBack}>
+        <Text style={styles.backIconText}>←</Text>
+      </TouchableOpacity>
       <Text style={styles.appTitle}>SERVICETask</Text>
-      <Text style={styles.appDesc}>
-        SERVICETask is a user-friendly mobile app designed to connect people who need jobs done with those who are looking for work. Whether you're a homeowner needing help with a task or a skilled worker looking for your next gig, SERVICETask makes it easy to post, find, and manage jobs in your area.
-        {"\n\n"}
-        Key Features:
-        {"\n"}• Post a task and hire local help
-        {"\n"}• Browse available jobs based on your skills
-        {"\n"}• In-app chat and job tracking
-        {"\n"}• Secure payments and reviews
-        {"\n\n"}
-        SERVICETask empowers communities by simplifying the way people work together — whether it’s cleaning, repairs, deliveries, or freelance work.
-      </Text>
-      {/* Edit Assignment Form */}
       <Text style={styles.heading}>Edit Task</Text>
       <TextInput
         placeholder="Task Title"
@@ -69,6 +149,21 @@ export default function EditAssignment() {
         placeholder="Deadline (e.g. 2025-10-05)"
         value={deadline}
         onChangeText={setDeadline}
+        style={styles.input}
+        placeholderTextColor="#666"
+      />
+      <TextInput
+        placeholder="Price (e.g. 25)"
+        value={price}
+        onChangeText={setPrice}
+        style={styles.input}
+        placeholderTextColor="#666"
+        keyboardType="numeric"
+      />
+      <TextInput
+        placeholder="Location (e.g. New York, NY)"
+        value={location}
+        onChangeText={setLocation}
         style={styles.input}
         placeholderTextColor="#666"
       />
@@ -91,6 +186,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#0b0b0b',
   },
+  backIcon: {
+    position: 'absolute',
+    top: 30,
+    left: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  backIconText: {
+    fontSize: 28,
+    color: '#1a7431',
+    fontWeight: 'bold',
+  },
   appTitle: {
     fontSize: 32,
     fontWeight: 'bold',
@@ -98,12 +205,42 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
-  appDesc: {
-    fontSize: 14,
+  illustration: {
+    fontSize: 48,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ff5252',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorDesc: {
+    fontSize: 16,
     color: '#ccc',
     marginBottom: 24,
     textAlign: 'center',
     maxWidth: 400,
+  },
+  buttonGroup: {
+    width: '100%',
+    maxWidth: 400,
+    marginTop: 10,
+  },
+  actionButton: {
+    backgroundColor: '#444',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   heading: {
     fontSize: 26,
@@ -128,5 +265,34 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     borderRadius: 8,
     overflow: 'hidden',
+  },
+  recentTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a7431',
+    marginTop: 24,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  recentList: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  recentItem: {
+    backgroundColor: '#23272f',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    width: '100%',
+  },
+  recentTask: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  recentLocation: {
+    color: '#29b6f6',
+    fontSize: 13,
   },
 });

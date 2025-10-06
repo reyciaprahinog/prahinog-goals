@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,9 +12,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 
 export default function Signup() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -24,9 +26,15 @@ export default function Signup() {
     setLoading(true);
     setErrorMsg('');
     try {
-      await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      // Save profile info to Firestore
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        name,
+        email,
+      });
       setPassword('');
       setEmail('');
+      setName('');
       setErrorMsg('✅ Account created! Redirecting to login...');
       setTimeout(() => {
         router.replace('/login');
@@ -59,6 +67,14 @@ export default function Signup() {
         </Text>
 
         <Text style={styles.title}>Create your SERVICETask Account</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Full Name"
+          placeholderTextColor="#888"
+          value={name}
+          onChangeText={setName}
+        />
 
         <TextInput
           style={styles.input}
